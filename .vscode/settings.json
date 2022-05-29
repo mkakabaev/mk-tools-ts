@@ -1,0 +1,22 @@
+{
+    "npm.scriptExplorerExclude": ["prebuild", "prepublishOnly", "watch"],
+
+    "jest.autoRun": {
+        "watch": true,
+        "onStartup": ["all-tests"]
+    },
+
+    "search.exclude": {
+        "**/node_modules": true
+    },
+
+    "cSpell.ignorePaths": ["package.json", "package-lock.json", "node_modules/**", ".eslintrc.js", "tsconfig*.json"],
+
+    "files.exclude": {
+        "**/.gitignore": false,
+        "**/node_modules": false
+    },
+
+    "editor.formatOnSave": true,
+    "cSpell.words": ["luxon"]
+}
