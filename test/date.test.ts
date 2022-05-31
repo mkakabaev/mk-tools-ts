@@ -1,6 +1,6 @@
 import { MKDate } from '../src';
 
-test('Date base tests', () => {
+test('Base', () => {
     const date1 = MKDate.utc(2021, 3, 1);
     const date2 = date1.addedMonths(1);
     // const date3 = MKDate.local(2021, 3, 1, 23, 11, 59);
@@ -10,7 +10,7 @@ test('Date base tests', () => {
     expect(date1.toISOString()).toBe('2021-03-01T00:00:00.000Z');
 });
 
-test('Date incrementing', () => {
+test('Incrementing', () => {
     expect(MKDate.utc(2021, 3, 1).addedMonths(1)).toEqual(MKDate.utc(2021, 4, 1));
     // expect(MKDate.utc(2021, 12, 31).addedMonths(1)).toEqual(MKDate.utc(2022, 1, 31));
     // expect(MKDate.utc(2021, 12, 31).addedMonths(12)).toEqual(MKDate.utc(2022, 12, 31));
@@ -18,7 +18,7 @@ test('Date incrementing', () => {
     expect(MKDate.utc(2020, 1, 28).addedMonths(2)).toEqual(MKDate.utc(2020, 3, 28));
 });
 
-test('Date comparisons', () => {
+test('Comparisons', () => {
     const d1 = MKDate.utc(2021, 3, 1);
 
     expect(MKDate.compare(d1, d1)).toBe(0);
