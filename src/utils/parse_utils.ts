@@ -1,4 +1,4 @@
-import { MKError } from '../types/error';
+import { MKError } from '../types';
 import { stringify } from './string_utils';
 
 // ------------------------------------------------------------------------------------------------
