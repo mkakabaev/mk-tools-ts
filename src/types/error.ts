@@ -90,7 +90,7 @@ export namespace MKError {
     /** Few standard codes */
     export enum Code {
         notFound = 'not_found',
-        badData = 'wrong_data_format',
+        invalidFormat = 'invalid_format', 
         alreadyExists = 'already_exists',
         outOfRange = 'out_of_range',
     }
