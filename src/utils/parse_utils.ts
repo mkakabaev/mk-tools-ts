@@ -3,7 +3,32 @@ import { stringify } from './string_utils';
 
 // ------------------------------------------------------------------------------------------------
 
-export function literalToType<T>(v: unknown, literals: readonly string[], options?: { tag?: string }): T {
+/**
+ * 
+ * Works best with unions, string literal types
+ * ```
+ *   const MyLiterals = [ 'value1', 'value2', 100 ] as const;
+ *   type MyType = typeof MyLiterals[number]; // MyType = 'value1' | 'value2' | 100;
+ * 
+ *   const typedVar = requiredLiteralType(someValue, MyLiterals) // typedVar is MyType now
+ * ```
+ * 
+ * inplace declaration is also possible
+ * ```
+ *   const someValue = "aaa"
+ *   var typedVar  = requiredLiteralType(someValue, [ 'value1', 'value2', 100 ] as const) 
+ *   var typedVar2 = requiredLiteralType(someValue, [ 'value1', 'value2', 100 ]) 
+ *   
+ *   typedVar = "value1" // ok
+ *   typedVar = "string" // compiler error 
+ *   typedVar = 300      // compiler error 
+ *   
+ *   typedVar2 = "value1" // ok
+ *   typedVar2 = "string" // ok 
+ *   typedVar2 = 300      // ok
+ * ```
+ */
+export function requiredLiteralType<T>(v: unknown, literals: readonly T[], options?: { tag?: string }): T {
     const v1 = literals.find((l) => l === v);
     if (v1 == undefined) {
         throw new MKError(`${stringify(v)} must be one of the [${literals.map((l) => `'${l}'`)}]`, {
