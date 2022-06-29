@@ -117,6 +117,14 @@ export class MKDate {
                 format = 'yyyy-MM-dd';
                 break;
 
+            case 'time':
+                format = 'HH:mm:ss';
+                break;
+
+            case 'time2':
+                format = 'HH:mm:ss.SSS';
+                break;
+                    
             case 'compact':
                 if (ld.year != _currentYear) {
                     format = 'yyyy-MM-dd HH:mm:ss';
@@ -245,5 +253,5 @@ export class MKDate {
 
 export namespace MKDate {
     export type Zone = 'local' | 'utc' | 'original';
-    export type FormatPreset = 'timestamp' | 'compact' | 'timestamp2' | 'date';
+    export type FormatPreset = 'timestamp' | 'compact' | 'timestamp2' | 'date' | 'time' | 'time2';
 }

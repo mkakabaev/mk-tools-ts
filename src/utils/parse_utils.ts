@@ -9,8 +9,11 @@ import { stringify } from './string_utils';
  * ```
  *   const MyLiterals = [ 'value1', 'value2', 100 ] as const;
  *   type MyType = typeof MyLiterals[number]; // MyType = 'value1' | 'value2' | 100;
+ *
+ *   const typedVar: MyType = requiredLiteralType(someValue, MyLiterals) 
  * 
- *   const typedVar = requiredLiteralType(someValue, MyLiterals) // typedVar is MyType now
+ *   // works also but breaks further `switch-exhaustiveness-check` eslint checking
+ *   const typedVar = requiredLiteralType(someValue, MyLiterals)   
  * ```
  * 
  * inplace declaration is also possible
