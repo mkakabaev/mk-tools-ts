@@ -1,6 +1,6 @@
 {
     "name": "mk-tools-ts",
-    "version": "0.0.5",
+    "version": "0.0.6",
     "description": "A helper library for my own projects",
     "keywords": [],
     "author": "Murad Kakabaev",
@@ -17,10 +17,10 @@
         "postinstall": "tsc"
     },
     "dependencies": {
-        "luxon": "^3.0.4"
+        "luxon": "3.0.2"
     },
     "devDependencies": {
-        "@types/luxon": "^3.0.2",
+        "@types/luxon": "3.0.2",
         "@types/jest": "^29.2.0",
         "@typescript-eslint/eslint-plugin": "^5.40.1",
         "@typescript-eslint/parser": "^5.40.1",
