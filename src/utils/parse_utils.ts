@@ -4,30 +4,30 @@ import { stringify } from './string_utils';
 // ------------------------------------------------------------------------------------------------
 
 /**
- * 
+ *
  * Works best with unions, string literal types
  * ```
  *   const MyLiterals = [ 'value1', 'value2', 100 ] as const;
  *   type MyType = typeof MyLiterals[number]; // MyType = 'value1' | 'value2' | 100;
  *
- *   const typedVar: MyType = requiredLiteralType(someValue, MyLiterals) 
- * 
+ *   const typedVar: MyType = requiredLiteralType(someValue, MyLiterals)
+ *
  *   // works also but breaks further `switch-exhaustiveness-check` eslint checking
- *   const typedVar = requiredLiteralType(someValue, MyLiterals)   
+ *   const typedVar = requiredLiteralType(someValue, MyLiterals)
  * ```
- * 
+ *
  * inplace declaration is also possible
  * ```
  *   const someValue = "aaa"
- *   var typedVar  = requiredLiteralType(someValue, [ 'value1', 'value2', 100 ] as const) 
- *   var typedVar2 = requiredLiteralType(someValue, [ 'value1', 'value2', 100 ]) 
- *   
+ *   var typedVar  = requiredLiteralType(someValue, [ 'value1', 'value2', 100 ] as const)
+ *   var typedVar2 = requiredLiteralType(someValue, [ 'value1', 'value2', 100 ])
+ *
  *   typedVar = "value1" // ok
- *   typedVar = "string" // compiler error 
- *   typedVar = 300      // compiler error 
- *   
+ *   typedVar = "string" // compiler error
+ *   typedVar = 300      // compiler error
+ *
  *   typedVar2 = "value1" // ok
- *   typedVar2 = "string" // ok 
+ *   typedVar2 = "string" // ok
  *   typedVar2 = 300      // ok
  * ```
  */
@@ -42,7 +42,54 @@ export function requiredLiteralType<T>(v: unknown, literals: readonly T[], optio
     return v1 as any as T;
 }
 
-export function requiredString(v: any, options?: { tag?: string; defaultValue?: string }): string {
+export function definedObject(v: any, options?: { path?: string[]; tag?: string }): any {
+    let result = v;
+
+    if (result === undefined) {
+        throw new MKError(`${stringify(v)} is not defined`, {
+            code: MKError.Code.invalidFormat,
+            ...options,
+        });
+    }
+
+    const path = options?.path;
+    if (path != null) {
+        for (const p of path) {
+            result = result[p];
+            if (result === undefined) {
+                throw new MKError(`${stringify(v)} has no defined child at path ${path.join('/')}`, {
+                    code: MKError.Code.invalidFormat,
+                    ...options,
+                });
+            }
+        }
+    }
+
+    return result;
+}
+
+export function stringOrNothing(v: any, options?: { tag?: string; acceptNumber?: boolean }): string | undefined {
+    if (v == null) {
+        return undefined;
+    }
+
+    if (typeof v === 'string') {
+        return v;
+    }
+
+    if (options?.acceptNumber ?? false) {
+        if (typeof v === 'number') {
+            return v.toString();
+        }
+    }
+
+    throw new MKError(`${stringify(v)} is not a string`, { code: MKError.Code.invalidFormat, ...options });
+}
+
+export function requiredString(
+    v: any,
+    options?: { tag?: string; defaultValue?: string; acceptNumber?: boolean },
+): string {
     if (v == null) {
         const defaultValue = options?.defaultValue;
         if (defaultValue != null) {
@@ -53,13 +100,27 @@ export function requiredString(v: any, options?: { tag?: string; defaultValue?: 
     if (typeof v === 'string') {
         return v;
     }
+
+    if (options?.acceptNumber ?? false) {
+        if (typeof v === 'number') {
+            return v.toString();
+        }
+    }
+
     throw new MKError(`${stringify(v)} is not a string`, { code: MKError.Code.invalidFormat, ...options });
 }
 
-export function requiredNonEmptyString(v: any, options?: { tag?: string }): string {
+export function requiredNonEmptyString(v: any, options?: { tag?: string; acceptNumber?: boolean }): string {
     if (typeof v === 'string' && v.length) {
         return v;
     }
+
+    if (options?.acceptNumber ?? false) {
+        if (typeof v === 'number') {
+            return v.toString();
+        }
+    }
+
     throw new MKError(`${stringify(v)} is not a non-empty string`, { code: MKError.Code.invalidFormat, ...options });
 }
 
