@@ -1,5 +1,5 @@
-import * as luxon from 'luxon';
-import * as util from 'util';
+import { DateTime as LDateTime } from 'luxon';
+import { inspect } from 'util';
 import { MKDuration } from './duration';
 
 // export function daysInMonth(options: { year: number, month: number /* starting 1 */ }): number {
@@ -8,17 +8,17 @@ import { MKDuration } from './duration';
 
 // ------------------------------------------------------------------------------------------------
 
-const _startDate = luxon.DateTime.now();
+const _startDate = LDateTime.now();
 const _currentYear = _startDate.year;
 const _currentYMD = _startDate.year * 10000 + _startDate.month * 100 + _startDate.day;
 
 // ------------------------------------------------------------------------------------------------
 
 export class MKDate {
-    // luxon.DateTime always contains a time zone. By default the local time zone is used!
-    private readonly ldt: luxon.DateTime;
+    // LDateTime always contains a time zone. By default the local time zone is used!
+    private readonly ldt: LDateTime;
 
-    private constructor(ldt: luxon.DateTime) {
+    private constructor(ldt: LDateTime) {
         if (!ldt) {
             throw 'MKDate(): empty date passed';
         }
@@ -33,23 +33,23 @@ export class MKDate {
     }
 
     static fromISO(text: string): MKDate {
-        return new MKDate(luxon.DateTime.fromISO(text));
+        return new MKDate(LDateTime.fromISO(text));
     }
     static fromLocalJSDate(date: Date): MKDate {
-        return new MKDate(luxon.DateTime.fromJSDate(date));
+        return new MKDate(LDateTime.fromJSDate(date));
     }
     static utcNow(): MKDate {
-        return new MKDate(luxon.DateTime.now().toUTC());
+        return new MKDate(LDateTime.now().toUTC());
     }
     static localNow(): MKDate {
-        return new MKDate(luxon.DateTime.now());
+        return new MKDate(LDateTime.now());
     }
     static localNowPlusSeconds(seconds: number): MKDate {
-        return new MKDate(luxon.DateTime.now().plus({ seconds: seconds }));
+        return new MKDate(LDateTime.now().plus({ seconds: seconds }));
     }
 
     static utc(year: number, month: number, day: number, hour = 0, minute = 0, second = 0, millisecond = 0): MKDate {
-        return new MKDate(luxon.DateTime.utc(year, month, day, hour, minute, second, millisecond));
+        return new MKDate(LDateTime.utc(year, month, day, hour, minute, second, millisecond));
     }
 
     static local(
@@ -61,10 +61,10 @@ export class MKDate {
         second: number,
         millisecond: number,
     ): MKDate {
-        return new MKDate(luxon.DateTime.local(year, month, day, hour, minute, second, millisecond));
+        return new MKDate(LDateTime.local(year, month, day, hour, minute, second, millisecond));
     }
 
-    private _preformat(options?: { zone?: MKDate.Zone }): { ld: luxon.DateTime; formatPostfix: string } {
+    private _preformat(options?: { zone?: MKDate.Zone }): { ld: LDateTime; formatPostfix: string } {
         let ld = this.ldt;
 
         let formatPostfix: string;
@@ -143,7 +143,7 @@ export class MKDate {
     }
 
     /** This is for console.log */
-    [util.inspect.custom](_depth: any, options: any): string {
+    [inspect.custom](_depth: any, options: any): string {
         return options.stylize(`MKDate(${this})`, 'date');
     }
 
@@ -246,8 +246,9 @@ export class MKDate {
     }
 
     /// For past events
+    /** Duration between the date and the current time. Positive for past dates */
     durationToNow(): MKDuration {
-        return new MKDuration(luxon.DateTime.now().valueOf() - this.valueOf());
+        return new MKDuration(LDateTime.now().valueOf() - this.valueOf());
     }
 }
 

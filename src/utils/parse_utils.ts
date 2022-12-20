@@ -1,4 +1,4 @@
-import { MKError } from '../types';
+import { MKError, TagLike } from '../types';
 import { stringify } from './string_utils';
 
 // ------------------------------------------------------------------------------------------------
@@ -31,7 +31,7 @@ import { stringify } from './string_utils';
  *   typedVar2 = 300      // ok
  * ```
  */
-export function requiredLiteralType<T>(v: unknown, literals: readonly T[], options?: { tag?: string }): T {
+export function requiredLiteralType<T>(v: unknown, literals: readonly T[], options?: { tag?: TagLike }): T {
     const v1 = literals.find((l) => l === v);
     if (v1 == undefined) {
         throw new MKError(`${stringify(v)} must be one of the [${literals.map((l) => `'${l}'`)}]`, {
@@ -42,7 +42,7 @@ export function requiredLiteralType<T>(v: unknown, literals: readonly T[], optio
     return v1 as any as T;
 }
 
-export function definedObject(v: any, options?: { path?: string[]; tag?: string }): any {
+export function definedObject(v: any, options?: { path?: string[]; tag?: TagLike }): any {
     let result = v;
 
     if (result === undefined) {
@@ -68,7 +68,7 @@ export function definedObject(v: any, options?: { path?: string[]; tag?: string 
     return result;
 }
 
-export function stringOrNothing(v: any, options?: { tag?: string; acceptNumber?: boolean }): string | undefined {
+export function optionalString(v: any, options?: { tag?: TagLike; acceptNumber?: boolean }): string | undefined {
     if (v == null) {
         return undefined;
     }
@@ -88,7 +88,7 @@ export function stringOrNothing(v: any, options?: { tag?: string; acceptNumber?:
 
 export function requiredString(
     v: any,
-    options?: { tag?: string; defaultValue?: string; acceptNumber?: boolean },
+    options?: { tag?: TagLike; defaultValue?: string; acceptNumber?: boolean },
 ): string {
     if (v == null) {
         const defaultValue = options?.defaultValue;
@@ -110,7 +110,7 @@ export function requiredString(
     throw new MKError(`${stringify(v)} is not a string`, { code: MKError.Code.invalidFormat, ...options });
 }
 
-export function requiredNonEmptyString(v: any, options?: { tag?: string; acceptNumber?: boolean }): string {
+export function requiredNonEmptyString(v: any, options?: { tag?: TagLike; acceptNumber?: boolean }): string {
     if (typeof v === 'string' && v.length) {
         return v;
     }
@@ -121,10 +121,21 @@ export function requiredNonEmptyString(v: any, options?: { tag?: string; acceptN
         }
     }
 
-    throw new MKError(`${stringify(v)} is not a non-empty string`, { code: MKError.Code.invalidFormat, ...options });
+    throw new MKError(`A non-empty string is expected, found ${stringify(v)}`, {
+        code: MKError.Code.invalidFormat,
+        ...options,
+    });
 }
 
-export function requiredArray<T>(v: any, options?: { tag?: string; minLength?: number }): T[] {
+export function requiredArray<T>(v: any, options?: { tag?: TagLike; minLength?: number; defaultValue?: T[] }): T[] {
+
+    if (v == null) {
+        const defaultValue = options?.defaultValue;
+        if (defaultValue != null) {
+            return defaultValue;
+        }
+    }
+
     if (!Array.isArray(v)) {
         throw new MKError(`${stringify(v)} is not an array`, { code: MKError.Code.invalidFormat, ...options });
     }
@@ -144,7 +155,7 @@ export function requiredArray<T>(v: any, options?: { tag?: string; minLength?: n
 export function requiredBool(
     v: any,
     options?: {
-        tag?: string;
+        tag?: TagLike;
     },
 ): boolean {
     if (typeof v === 'boolean') {
@@ -162,18 +173,18 @@ const _floatPattern = new RegExp('^[+-]?[0-9]{1,15}([.][0-9]{0,15})?$');
 
 export function requiredInt(
     v: any,
-    options: {
+    options?: {
         minValue?: number;
         maxValue?: number;
-        tag?: string;
+        tag?: TagLike;
         defaultValue?: number;
-    } = {},
+    },
 ): number {
-    const { defaultValue, minValue, maxValue } = options;
+    // const { defaultValue, minValue, maxValue } = options;
 
     if (v == null) {
-        if (defaultValue != null) {
-            return defaultValue;
+        if (options?.defaultValue != null) {
+            return options.defaultValue;
         }
     }
 
@@ -209,6 +220,7 @@ export function requiredInt(
         });
     }
 
+    const minValue = options?.minValue;
     if (minValue != undefined) {
         if (minValue > result) {
             throw new MKError(`Value is out of range: the '${result}' value must not be less than ${minValue}`, {
@@ -218,8 +230,9 @@ export function requiredInt(
         }
     }
 
-    if (maxValue != undefined) {
-        if (maxValue < result) {
+    const maxValue = options?.maxValue;
+    if (options?.maxValue != undefined) {
+        if (options?.maxValue < result) {
             throw new MKError(`Value is out of range: the '${result}' value must not be greater than ${maxValue}`, {
                 code: MKError.Code.outOfRange,
                 ...options,
@@ -231,12 +244,28 @@ export function requiredInt(
 
 // ------------------------------------------------------------------------------------------------
 
+export function optionalInt(
+    v: any,
+    options?: {
+        minValue?: number;
+        maxValue?: number;
+        tag?: TagLike;
+    },
+): number | undefined {
+    if (v == null) {
+        return undefined;
+    }
+    return requiredInt(v, options);
+}
+
+// ------------------------------------------------------------------------------------------------
+
 export function requiredFloat(
     v: any,
     options: {
         minValue?: number;
         maxValue?: number;
-        tag?: string;
+        tag?: TagLike;
         defaultValue?: number;
     } = {},
 ): number {

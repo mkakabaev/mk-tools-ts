@@ -1,5 +1,6 @@
 import { ToStringBuilder } from './to_string_builder';
 import { extractMessage } from '../utils/error_utils';
+import { Tag, TagLike } from './tag';
 
 // ------------------------------------------------------------------------------------------------
 
@@ -27,7 +28,7 @@ if (!('toJSON' in Error.prototype)) {
 export class MKError extends Error {
     readonly code?: string | number;
     readonly domain?: string;
-    readonly tag?: string;
+    readonly tag?: Tag;
     readonly description: string;
     readonly isPrivate: boolean;
     readonly details?: string[];
@@ -57,7 +58,7 @@ export class MKError extends Error {
         this.description = message;
         this.code = options?.code;
         this.domain = options?.domain;
-        this.tag = options?.tag;
+        this.tag = Tag.resolve(options?.tag);
         this.details = options?.details;
         this.isPrivate = options?.isPrivate ?? false;
     }
@@ -80,7 +81,7 @@ export class MKError extends Error {
 
 export namespace MKError {
     export interface Options {
-        tag?: string;
+        tag?: TagLike;
         code?: string | number;
         domain?: string;
         isPrivate?: boolean;
