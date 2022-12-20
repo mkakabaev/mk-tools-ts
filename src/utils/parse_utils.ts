@@ -64,7 +64,6 @@ export function definedObject(v: any, options?: { path?: string[]; tag?: TagLike
             }
         }
     }
-
     return result;
 }
 
@@ -128,7 +127,6 @@ export function requiredNonEmptyString(v: any, options?: { tag?: TagLike; accept
 }
 
 export function requiredArray<T>(v: any, options?: { tag?: TagLike; minLength?: number; defaultValue?: T[] }): T[] {
-
     if (v == null) {
         const defaultValue = options?.defaultValue;
         if (defaultValue != null) {

@@ -1,5 +1,5 @@
 import { ToStringBuilder } from './to_string_builder';
-import { extractMessage } from '../utils/error_utils';
+import { extractErrorMessage } from '../utils/error_utils';
 import { Tag, TagLike } from './tag';
 
 // ------------------------------------------------------------------------------------------------
@@ -73,7 +73,7 @@ export class MKError extends Error {
             throw new MKError(`${message}: ${e.description}`, { ...e, ...options });
         }
 
-        throw new MKError(`${message}: ${extractMessage(e)}`, options);
+        throw new MKError(`${message}: ${extractErrorMessage(e)}`, options);
     }
 }
 

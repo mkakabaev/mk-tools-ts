@@ -1,5 +1,5 @@
 
-export function extractMessage(error: unknown): string {
+export function extractErrorMessage(error: unknown): string {
     if (error == null) {
         return "??";
     }
