@@ -7,6 +7,7 @@ import { Tag, TagLike } from './tag';
 // Patch Error to be able to serialize it
 // https://stackoverflow.com/questions/18391212/is-it-not-possible-to-stringify-an-error-using-json-stringify
 
+/*
 if (!('toJSON' in Error.prototype)) {
     Object.defineProperty(Error.prototype, 'toJSON', {
         value: function () {
@@ -22,6 +23,7 @@ if (!('toJSON' in Error.prototype)) {
         writable: true,
     });
 }
+*/
 
 // ------------------------------------------------------------------------------------------------
 

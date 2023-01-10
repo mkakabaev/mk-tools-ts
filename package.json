@@ -1,12 +1,19 @@
 {
     "name": "mk-tools-ts",
-    "version": "0.0.9",
+    "version": "0.0.11",
     "description": "A helper library for my own projects",
     "keywords": [],
     "author": "Murad Kakabaev",
     "private": false,
     "license": "Apache-2.0",
     "main": "dist/index.js",
+    "exports": {
+        ".": "./dist/index.js",
+        "./tag": "./dist/types/tag.js",
+        "./delay": "./dist/utils/delay.js",
+        "./stringify": "./dist/utils/stringify.js",
+        "./parser": "./dist/utils/parse_utils.js"
+    },
     "types": "dist/index.d.ts",
     "files": [
         "dist"

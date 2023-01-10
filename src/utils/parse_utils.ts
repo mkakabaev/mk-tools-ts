@@ -1,7 +1,28 @@
-import { MKError, TagLike } from '../types';
-import { stringify } from './string_utils';
+import { TagLike } from '../types/tag';
+import { stringify } from './stringify';
 
 // ------------------------------------------------------------------------------------------------
+
+//
+// Make parse error customizable. By default this is set to MKError in the index
+// (as soon as library is used as is)
+//
+
+export type ErrorFunction = (message: string, options?: { tag?: TagLike }) => Error;
+
+export const config: {
+    errorFunction?: ErrorFunction | undefined;
+} = {};
+
+// ------------------------------------------------------------------------------------------------
+
+function _throwErr(message: string, options?: { tag?: TagLike }): never {
+    const f = config.errorFunction;
+    if (!f) {
+        throw `No error function configured the parser (${message})`;
+    }
+    throw f(message, options);
+}
 
 /**
  *
@@ -34,10 +55,7 @@ import { stringify } from './string_utils';
 export function requiredLiteralType<T>(v: unknown, literals: readonly T[], options?: { tag?: TagLike }): T {
     const v1 = literals.find((l) => l === v);
     if (v1 == undefined) {
-        throw new MKError(`${stringify(v)} must be one of the [${literals.map((l) => `'${l}'`)}]`, {
-            code: MKError.Code.invalidFormat,
-            ...options,
-        });
+        _throwErr(`${stringify(v)} must be one of the [${literals.map((l) => `'${l}'`)}]`, options);
     }
     return v1 as any as T;
 }
@@ -46,10 +64,7 @@ export function definedObject(v: any, options?: { path?: string[]; tag?: TagLike
     let result = v;
 
     if (result === undefined) {
-        throw new MKError(`${stringify(v)} is not defined`, {
-            code: MKError.Code.invalidFormat,
-            ...options,
-        });
+        _throwErr(`${stringify(v)} is not defined`, options);
     }
 
     const path = options?.path;
@@ -57,13 +72,15 @@ export function definedObject(v: any, options?: { path?: string[]; tag?: TagLike
         for (const p of path) {
             result = result[p];
             if (result === undefined) {
-                throw new MKError(`${stringify(v)} has no defined child at path ${path.join('/')}`, {
-                    code: MKError.Code.invalidFormat,
-                    ...options,
-                });
+                _throwErr(`${stringify(v)} has no defined child at path ${path.join('/')}`, options);
             }
         }
     }
+
+    if (result === null || typeof result != 'object') {
+        _throwErr(`${stringify(v)} is not an object`, options);
+    }
+
     return result;
 }
 
@@ -82,7 +99,7 @@ export function optionalString(v: any, options?: { tag?: TagLike; acceptNumber?:
         }
     }
 
-    throw new MKError(`${stringify(v)} is not a string`, { code: MKError.Code.invalidFormat, ...options });
+    _throwErr(`${stringify(v)} is not a string`, options);
 }
 
 export function requiredString(
@@ -106,7 +123,7 @@ export function requiredString(
         }
     }
 
-    throw new MKError(`${stringify(v)} is not a string`, { code: MKError.Code.invalidFormat, ...options });
+    _throwErr(`${stringify(v)} is not a string`, options);
 }
 
 export function requiredNonEmptyString(v: any, options?: { tag?: TagLike; acceptNumber?: boolean }): string {
@@ -120,10 +137,7 @@ export function requiredNonEmptyString(v: any, options?: { tag?: TagLike; accept
         }
     }
 
-    throw new MKError(`A non-empty string is expected, found ${stringify(v)}`, {
-        code: MKError.Code.invalidFormat,
-        ...options,
-    });
+    _throwErr(`A non-empty string is expected, found ${stringify(v)}`, options);
 }
 
 export function requiredArray<T>(v: any, options?: { tag?: TagLike; minLength?: number; defaultValue?: T[] }): T[] {
@@ -135,15 +149,12 @@ export function requiredArray<T>(v: any, options?: { tag?: TagLike; minLength?: 
     }
 
     if (!Array.isArray(v)) {
-        throw new MKError(`${stringify(v)} is not an array`, { code: MKError.Code.invalidFormat, ...options });
+        _throwErr(`${stringify(v)} is not an array`, options);
     }
 
     if (options?.minLength != null) {
         if (v.length < options.minLength) {
-            throw new MKError(`The array must contains at least ${options.minLength} element(s)`, {
-                code: MKError.Code.invalidFormat,
-                ...options,
-            });
+            _throwErr(`The array must contains at least ${options.minLength} element(s)`, options);
         }
     }
 
@@ -159,7 +170,7 @@ export function requiredBool(
     if (typeof v === 'boolean') {
         return v;
     }
-    throw new MKError(`${stringify(v)} is not a boolean`, { code: MKError.Code.invalidFormat, ...options });
+    _throwErr(`${stringify(v)} is not a boolean`, options);
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -178,8 +189,6 @@ export function requiredInt(
         defaultValue?: number;
     },
 ): number {
-    // const { defaultValue, minValue, maxValue } = options;
-
     if (v == null) {
         if (options?.defaultValue != null) {
             return options.defaultValue;
@@ -191,50 +200,32 @@ export function requiredInt(
         if (Number.isSafeInteger(v)) {
             result = Math.floor(v); // just in case, throw away minor fractions
             if (result !== v) {
-                throw new MKError(`Invalid value format: ${v} is a float (an integer is required)`, {
-                    code: MKError.Code.invalidFormat,
-                    ...options,
-                });
+                _throwErr(`${v} is a float value (an integer is required)`, options);
             }
         } else {
-            throw new MKError(`Invalid value format: ${v} does not look like a safe integer`, {
-                code: MKError.Code.invalidFormat,
-                ...options,
-            });
+            _throwErr(`${v} does not look like a safe integer`, options);
         }
     } else if (typeof v == 'string') {
         if (_integerPattern.test(v)) {
             result = parseInt(v);
         } else {
-            throw new MKError(`Invalid value format: '${v}' does not look like a valid integer string`, {
-                code: MKError.Code.invalidFormat,
-                ...options,
-            });
+            _throwErr(`${stringify(v)} does not look like a valid integer string`, options);
         }
     } else {
-        throw new MKError(`Invalid value format: ${stringify(v)} does not look like a valid integer`, {
-            code: MKError.Code.invalidFormat,
-            ...options,
-        });
+        _throwErr(`${stringify(v)} does not look like a valid integer`, options);
     }
 
     const minValue = options?.minValue;
     if (minValue != undefined) {
         if (minValue > result) {
-            throw new MKError(`Value is out of range: the '${result}' value must not be less than ${minValue}`, {
-                code: MKError.Code.outOfRange,
-                ...options,
-            });
+            _throwErr(`Value is out of range: the '${result}' value must not be less than ${minValue}`, options);
         }
     }
 
     const maxValue = options?.maxValue;
     if (options?.maxValue != undefined) {
         if (options?.maxValue < result) {
-            throw new MKError(`Value is out of range: the '${result}' value must not be greater than ${maxValue}`, {
-                code: MKError.Code.outOfRange,
-                ...options,
-            });
+            _throwErr(`Value is out of range: the '${result}' value must not be greater than ${maxValue}`, options);
         }
     }
     return result;
@@ -280,44 +271,29 @@ export function requiredFloat(
         if (Number.isFinite(v)) {
             result = v;
         } else {
-            throw new MKError(`Invalid value format: ${v} does not look like a finite integer`, {
-                code: MKError.Code.invalidFormat,
-                ...options,
-            });
+            _throwErr(`${v} does not look like a finite number`, options);
         }
     } else if (typeof v == 'string') {
         if (_floatPattern.test(v)) {
             result = parseFloat(v);
         } else {
-            throw new MKError(`Invalid value format: '${v}' does not look like a valid float string`, {
-                code: MKError.Code.invalidFormat,
-                ...options,
-            });
+            _throwErr(`${stringify(v)} does not look like a valid float string`, options);
         }
     } else {
-        throw new MKError(`Invalid value format: ${stringify(v)} does not look like a valid float`, {
-            code: MKError.Code.invalidFormat,
-            ...options,
-        });
+        _throwErr(`${stringify(v)} does not look like a valid float value`, options);
     }
 
     if (minValue != undefined) {
         if (minValue > result) {
-            throw new MKError(`Value is out of range: ${result} must be greater than or equal to ${minValue}`, {
-                code: MKError.Code.outOfRange,
-                ...options,
-            });
+            _throwErr(`Value is out of range: ${result} must be greater than or equal to ${minValue}`, options);
         }
     }
 
     if (maxValue != undefined) {
         if (maxValue < result) {
-            throw new MKError(
+            _throwErr(
                 `Value is out of range: the '${result}' value must be less than or equal to ${maxValue}`,
-                {
-                    code: MKError.Code.outOfRange,
-                    ...options,
-                },
+                options,
             );
         }
     }

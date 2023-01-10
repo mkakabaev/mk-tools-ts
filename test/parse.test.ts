@@ -1,8 +1,8 @@
-import { parser, MKError } from '../src';
+import { requiredFloat, requiredInt, MKError } from '../src';
 
 test('requiredInt', () => { 
 
-    const ri = parser.requiredInt;
+    const ri = requiredInt;
 
     expect(ri(0)).toBe(0);
     expect(ri(+0)).toBe(0);
@@ -34,7 +34,7 @@ test('requiredInt', () => {
 
 test('requiredFloat', () => { 
 
-    const rf = parser.requiredFloat;
+    const rf = requiredFloat;
 
     expect(rf(0)).toBe(0);
     expect(rf(+0)).toBe(0);
