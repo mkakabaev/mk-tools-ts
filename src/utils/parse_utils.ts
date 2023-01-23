@@ -60,7 +60,7 @@ export function requiredLiteralType<T>(v: unknown, literals: readonly T[], optio
     return v1 as any as T;
 }
 
-export function definedObject(v: any, options?: { path?: string[]; tag?: TagLike }): any {
+export function definedObject<T = Record<string, any>>(v: any, options?: { path?: string[]; tag?: TagLike }): T {
     let result = v;
 
     if (result === undefined) {
