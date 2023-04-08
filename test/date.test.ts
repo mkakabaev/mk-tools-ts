@@ -10,6 +10,13 @@ test('Base', () => {
     expect(date1.toISOString()).toBe('2021-03-01T00:00:00.000Z');
 });
 
+test('Serialization', () => {
+    const date1 = MKDate.utc(2021, 3, 1, 23, 10, 4, 123);
+    const date2 = MKDate.fromSimple(date1.toJSON());
+    expect(date1.isEqual(date2)).toBe(true);
+});
+
+
 test('Incrementing', () => {
     expect(MKDate.utc(2021, 3, 1).addedMonths(1)).toEqual(MKDate.utc(2021, 4, 1));
     // expect(MKDate.utc(2021, 12, 31).addedMonths(1)).toEqual(MKDate.utc(2022, 1, 31));

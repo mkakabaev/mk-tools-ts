@@ -1,6 +1,7 @@
 import { DateTime as LDateTime } from 'luxon';
-import { inspect } from 'util';
+// import { inspect } from 'util';
 import { MKDuration } from './duration';
+import { MKSimpleDate } from './simple_date';
 
 // export function daysInMonth(options: { year: number, month: number /* starting 1 */ }): number {
 //     return new Date(options.year, options.month, 0).getDate();
@@ -30,6 +31,10 @@ export class MKDate {
 
     static epochMilliseconds(): number {
         return new Date().getTime();
+    }
+
+    static fromSimple(s: MKSimpleDate): MKDate {
+        return new MKDate(LDateTime.fromMillis(s));
     }
 
     static fromISO(text: string): MKDate {
@@ -138,14 +143,14 @@ export class MKDate {
         return ld.toFormat(format + formatPostfix);
     }
 
-    toJSON(): string {
-        return this.ldt.toJSON();
+    toJSON(): MKSimpleDate {
+        return this.ldt.toMillis() as MKSimpleDate;
     }
 
     /** This is for console.log */
-    [inspect.custom](_depth: any, options: any): string {
-        return options.stylize(`MKDate(${this})`, 'date');
-    }
+    // [inspect.custom](_depth: any, options: any): string {
+    //    return options.stylize(`MKDate(${this})`, 'date');
+    // }
 
     addedMonths(months: number): MKDate {
         if (this.day > 28) {
@@ -256,3 +261,6 @@ export namespace MKDate {
     export type Zone = 'local' | 'utc' | 'original';
     export type FormatPreset = 'timestamp' | 'compact' | 'timestamp2' | 'date' | 'time' | 'time2';
 }
+
+
+

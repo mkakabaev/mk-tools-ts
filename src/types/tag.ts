@@ -1,7 +1,10 @@
 export type TagValue = string | number;
+export type OptionalTagValue = TagValue | undefined;
 
 export type TagLike = TagValue | Tag;
+export type OptionalTagLike = TagLike | undefined;
 
+export type OptionalTag = Tag | undefined;
 export class Tag {
     //
     private readonly _parent: Tag | undefined;
@@ -12,16 +15,15 @@ export class Tag {
         this._parent = parent;
     }
 
-    static resolve(t: TagLike | undefined): Tag | undefined {
-        if (t !== undefined) {
-            if (t instanceof Tag) {
-                return t;
-            }
-            return new Tag(t);
+    static resolve(tag: OptionalTagLike, tagNext?: OptionalTagValue): OptionalTag {
+        if (tag == null) {
+            return tagNext == null ? undefined : new Tag(tagNext);
         }
+        const result = tag instanceof Tag ? tag : new Tag(tag);
+        return tagNext == null ? result : result.next(tagNext);
     }
 
-    static make(value: TagValue, parent?: TagLike): Tag {
+    static make(value: TagValue, parent?: OptionalTagLike): Tag {
         return new Tag(value, Tag.resolve(parent));
     }
 
@@ -37,7 +39,7 @@ export class Tag {
                 // mimic array indices
                 result = `[${s.value}]` + result;
             } else {
-                result = `.${s.value}` + result;
+                result = `/${s.value}` + result;
             }
             s = s._parent;
         }

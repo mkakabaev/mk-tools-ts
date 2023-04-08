@@ -1,4 +1,6 @@
-import { TagLike } from '../types/tag';
+import { MKSimpleDate } from '../types/simple_date';
+import { TagLike, TagValue } from '../types/tag';
+import { extractErrorMessage } from './error_utils';
 import { stringify } from './stringify';
 
 // ------------------------------------------------------------------------------------------------
@@ -8,21 +10,102 @@ import { stringify } from './stringify';
 // (as soon as library is used as is)
 //
 
-export type ErrorFunction = (message: string, options?: { tag?: TagLike }) => Error;
+export type Options = {
+    tag?: TagLike;
+    tagNext?: TagValue;
+    code?: string;
+    subcode?: string;
+};
 
-export const config: {
-    errorFunction?: ErrorFunction | undefined;
-} = {};
+export type ErrorOptions = Options;
+
+export type ErrorFunction = (message: string, options?: ErrorOptions) => Error;
+
+export const config: { errorFunction?: ErrorFunction } = {};
 
 // ------------------------------------------------------------------------------------------------
 
-function _throwErr(message: string, options?: { tag?: TagLike }): never {
+function _throwErr(message: string, options?: ErrorOptions): never {
     const f = config.errorFunction;
     if (!f) {
         throw `No error function configured the parser (${message})`;
     }
     throw f(message, options);
 }
+
+// ------------------------------------------------------------------------------------------------
+
+export function makeOptional<T, O>(f: (v: T, options?: O) => T): (v: T | undefined, options?: O) => T | undefined {
+    return (v: T | undefined, options?: O) => {
+        if (v == null) {
+            return undefined;
+        }
+        return f(v, options);
+    };
+}
+
+export function makeNullable<T, O>(f: (v: T, options?: O) => T): (v: T | null, options?: O) => T | null {
+    return (v: T | null, options?: O) => {
+        if (v == null) {
+            return null;
+        }
+        return f(v, options);
+    };
+}
+
+export function makeOptionalNullable<T, O>(
+    f: (v: T, options?: O) => T,
+): (v: T | null | undefined, options?: O) => T | null | undefined {
+    return (v: T | undefined | null, options?: O) => {
+        if (v === null) {
+            return null;
+        }
+        if (v === undefined) {
+            return null;
+        }
+        return f(v, options);
+    };
+}
+
+// ------------------------------------------------------------------------------------------------
+
+export function makeOptionalLiteral<T, O>(
+    f: (v: T, literals: readonly T[], options?: O) => T,
+): (v: T | undefined, literals: readonly T[], options?: O) => T | undefined {
+    return (v: T | undefined, literals: readonly T[], options?: O) => {
+        if (v == null) {
+            return undefined;
+        }
+        return f(v, literals, options);
+    };
+}
+
+export function makeNullableLiteral<T, O>(
+    f: (v: T, literals: readonly T[], options?: O) => T,
+): (v: T | null, literals: readonly T[], options?: O) => T | null {
+    return (v: T | null, literals: readonly T[], options?: O) => {
+        if (v == null) {
+            return null;
+        }
+        return f(v, literals, options);
+    };
+}
+
+export function makeOptionalNullableLiteral<T, O>(
+    f: (v: T, literals: readonly T[], options?: O) => T,
+): (v: T | null | undefined, literals: readonly T[], options?: O) => T | null | undefined {
+    return (v: T | undefined | null, literals: readonly T[], options?: O) => {
+        if (v === null) {
+            return null;
+        }
+        if (v === undefined) {
+            return null;
+        }
+        return f(v, literals, options);
+    };
+}
+
+// ------------------------------------------------------------------------------------------------
 
 /**
  *
@@ -52,19 +135,25 @@ function _throwErr(message: string, options?: { tag?: TagLike }): never {
  *   typedVar2 = 300      // ok
  * ```
  */
-export function requiredLiteralType<T>(v: unknown, literals: readonly T[], options?: { tag?: TagLike }): T {
+export function requiredLiteral<T>(v: T, literals: readonly T[], options?: Options): T {
     const v1 = literals.find((l) => l === v);
     if (v1 == undefined) {
         _throwErr(`${stringify(v)} must be one of the [${literals.map((l) => `'${l}'`)}]`, options);
     }
-    return v1 as any as T;
+    return v1;
 }
 
-export function definedObject<T = Record<string, any>>(v: any, options?: { path?: string[]; tag?: TagLike }): T {
+export const optionalLiteral = makeOptionalLiteral(requiredLiteral);
+export const nullableLiteral = makeNullableLiteral(requiredLiteral);
+export const optionalNullableLiteral = makeOptionalNullableLiteral(requiredLiteral);
+
+// ------------------------------------------------------------------------------------------------
+
+export function definedObject<T = Record<string, any>>(v: any, options?: { path?: string[] } & Options): T {
     let result = v;
 
     if (result === undefined) {
-        _throwErr(`${stringify(v)} is not defined`, options);
+        _throwErr(`Missed object`, options);
     }
 
     const path = options?.path;
@@ -84,28 +173,12 @@ export function definedObject<T = Record<string, any>>(v: any, options?: { path?
     return result;
 }
 
-export function optionalString(v: any, options?: { tag?: TagLike; acceptNumber?: boolean }): string | undefined {
-    if (v == null) {
-        return undefined;
-    }
+// ------------------------------------------------------------------------------------------------
 
-    if (typeof v === 'string') {
-        return v;
-    }
-
-    if (options?.acceptNumber ?? false) {
-        if (typeof v === 'number') {
-            return v.toString();
-        }
-    }
-
-    _throwErr(`${stringify(v)} is not a string`, options);
-}
-
-export function requiredString(
-    v: any,
-    options?: { tag?: TagLike; defaultValue?: string; acceptNumber?: boolean },
-): string {
+export function requiredString<T extends string>(
+    v: T,
+    options?: { defaultValue?: T; acceptNumber?: boolean } & Options,
+): T {
     if (v == null) {
         const defaultValue = options?.defaultValue;
         if (defaultValue != null) {
@@ -114,33 +187,36 @@ export function requiredString(
     }
 
     if (typeof v === 'string') {
-        return v;
+        return v as T;
     }
 
     if (options?.acceptNumber ?? false) {
         if (typeof v === 'number') {
-            return v.toString();
+            return ('' + v) as T;
         }
     }
 
     _throwErr(`${stringify(v)} is not a string`, options);
 }
 
-export function requiredNonEmptyString(v: any, options?: { tag?: TagLike; acceptNumber?: boolean }): string {
-    if (typeof v === 'string' && v.length) {
-        return v;
+export function nonEmptyString<T extends string>(v: T, options?: { acceptNumber?: boolean } & Options): T {
+    const r = requiredString(v, options);
+    if (r.length) {
+        return r;
     }
-
-    if (options?.acceptNumber ?? false) {
-        if (typeof v === 'number') {
-            return v.toString();
-        }
-    }
-
     _throwErr(`A non-empty string is expected, found ${stringify(v)}`, options);
 }
 
-export function requiredArray<T>(v: any, options?: { tag?: TagLike; minLength?: number; defaultValue?: T[] }): T[] {
+export const optionalString = makeOptional(requiredString);
+export const nullableString = makeNullable(requiredString);
+export const optionalNullableString = makeOptionalNullable(requiredString);
+
+// ------------------------------------------------------------------------------------------------
+
+export function requiredArray<T>(
+    v: T[],
+    options?: { minLength?: number; maxLength?: number; defaultValue?: T[] } & Options,
+): T[] {
     if (v == null) {
         const defaultValue = options?.defaultValue;
         if (defaultValue != null) {
@@ -154,41 +230,56 @@ export function requiredArray<T>(v: any, options?: { tag?: TagLike; minLength?: 
 
     if (options?.minLength != null) {
         if (v.length < options.minLength) {
-            _throwErr(`The array must contains at least ${options.minLength} element(s)`, options);
+            _throwErr(
+                `The array must contain at least ${options.minLength} element${options.minLength == 1 ? '' : 's'}`,
+                options,
+            );
+        }
+    }
+
+    if (options?.maxLength != null) {
+        if (v.length > options.maxLength) {
+            _throwErr(
+                `The array must contain not more than ${options.maxLength} element${options.minLength == 1 ? '' : 's'}`,
+                options,
+            );
         }
     }
 
     return v;
 }
 
-export function requiredBool(
-    v: any,
-    options?: {
-        tag?: TagLike;
-    },
-): boolean {
+export const optionalArray = makeOptional(requiredArray);
+export const nullableArray = makeNullable(requiredArray);
+export const optionalNullableArray = makeOptionalNullable(requiredArray);
+
+// ------------------------------------------------------------------------------------------------
+
+export function requiredBool<T extends boolean>(v: T, options?: Options): T {
     if (typeof v === 'boolean') {
-        return v;
+        return v as T;
     }
     _throwErr(`${stringify(v)} is not a boolean`, options);
 }
 
+export const optionalBool = makeOptional(requiredBool);
+export const nullableBool = makeNullable(requiredBool);
+export const optionalNullableBool = makeOptionalNullable(requiredBool);
+
 // ------------------------------------------------------------------------------------------------
 
-const _integerPattern = new RegExp('^[+-]?[0-9]{1,15}$'); // There will be rounding after 15 symbols and/or literal number precision loss (actually, > 2^53)
+// There will be rounding after 15 symbols and/or literal number precision loss (actually, > 2^53)
+const _integerPattern = new RegExp('^[+-]?[0-9]{1,15}$');
 const _floatPattern = new RegExp('^[+-]?[0-9]{1,15}([.][0-9]{0,15})?$');
 
-// ------------------------------------------------------------------------------------------------
-
-export function requiredInt(
-    v: any,
+export function requiredInt<T extends number>(
+    v: T,
     options?: {
-        minValue?: number;
-        maxValue?: number;
-        tag?: TagLike;
-        defaultValue?: number;
-    },
-): number {
+        minValue?: T;
+        maxValue?: T;
+        defaultValue?: T;
+    } & Options,
+): T {
     if (v == null) {
         if (options?.defaultValue != null) {
             return options.defaultValue;
@@ -198,12 +289,13 @@ export function requiredInt(
     let result: number;
     if (typeof v == 'number') {
         if (Number.isSafeInteger(v)) {
-            result = Math.floor(v); // just in case, throw away minor fractions
-            if (result !== v) {
-                _throwErr(`${v} is a float value (an integer is required)`, options);
-            }
+            // result = Math.floor(v); // just in case, throw away minor fractions
+            // if (result !== v) {
+            //    _throwErr(`${v} is a float value (an integer is required)`, options);
+            // }
+            result = v;
         } else {
-            _throwErr(`${v} does not look like a safe integer`, options);
+            _throwErr(`${v} does not look like a true integer`, options);
         }
     } else if (typeof v == 'string') {
         if (_integerPattern.test(v)) {
@@ -228,41 +320,28 @@ export function requiredInt(
             _throwErr(`Value is out of range: the '${result}' value must not be greater than ${maxValue}`, options);
         }
     }
-    return result;
+    return result as T;
 }
+
+export const optionalInt = makeOptional(requiredInt);
+export const nullableInt = makeNullable(requiredInt);
+export const optionalNullableInt = makeOptionalNullable(requiredInt);
 
 // ------------------------------------------------------------------------------------------------
 
-export function optionalInt(
-    v: any,
+export function requiredFloat<T extends number>(
+    v: T,
     options?: {
-        minValue?: number;
-        maxValue?: number;
-        tag?: TagLike;
-    },
-): number | undefined {
-    if (v == null) {
-        return undefined;
-    }
-    return requiredInt(v, options);
-}
-
-// ------------------------------------------------------------------------------------------------
-
-export function requiredFloat(
-    v: any,
-    options: {
-        minValue?: number;
-        maxValue?: number;
-        tag?: TagLike;
-        defaultValue?: number;
-    } = {},
-): number {
-    const { defaultValue, minValue, maxValue } = options;
+        minValue?: T;
+        maxValue?: T;
+        defaultValue?: T;
+    } & Options,
+): T {
+    const { defaultValue, minValue, maxValue } = options ?? {};
 
     if (v == null) {
         if (defaultValue != null) {
-            return defaultValue;
+            return defaultValue as T;
         }
     }
 
@@ -285,17 +364,54 @@ export function requiredFloat(
 
     if (minValue != undefined) {
         if (minValue > result) {
-            _throwErr(`Value is out of range: ${result} must be greater than or equal to ${minValue}`, options);
+            _throwErr(`Value is out of range: ${result} must be >= ${minValue}`, options);
         }
     }
 
     if (maxValue != undefined) {
         if (maxValue < result) {
-            _throwErr(
-                `Value is out of range: the '${result}' value must be less than or equal to ${maxValue}`,
-                options,
-            );
+            _throwErr(`Value is out of range: the ${result} value must be <= ${maxValue}`, options);
         }
     }
-    return result;
+    return result as T;
 }
+
+export const optionalFloat = makeOptional(requiredFloat);
+export const nullableFloat = makeNullable(requiredFloat);
+export const optionalNullableFloat = makeOptionalNullable(requiredFloat);
+
+// ------------------------------------------------------------------------------------------------
+
+export function requiredSimpleDate<T extends MKSimpleDate>(v: T, options?: Options): T {
+    try {
+        let d = NaN;
+        if ('number' == typeof v) {
+            d = v;
+        } else if ((v as any) instanceof Date) {
+            d = (v as Date).getTime();
+        } else if ('string' == typeof v) {
+            d = Date.parse(v);
+        }
+        if (isNaN(d)) {
+            throw 'Neither a valid UNIX timestamp nor a string ready to Date.parse()';
+        }
+
+        // Check against reasonable values: 2020-01-01..2050-01-01.
+        // Convert seconds to milliseconds,
+        if (1577836800 <= d && d <= 2524608000) {
+            d *= 1000;
+        }
+
+        if (d < 1577836800000 || d > 2524608000000) {
+            throw 'Value is out of valid timestamp ranges';
+        }
+
+        return d as T;
+    } catch (e) {
+        _throwErr(`${stringify(v)} is not a valid date: ${extractErrorMessage(e)}`, options);
+    }
+}
+
+export const optionalSimpleDate = makeOptional(requiredSimpleDate);
+export const nullableSimpleDate = makeNullable(requiredSimpleDate);
+export const optionalNullableSimpleDate = makeOptionalNullable(requiredSimpleDate);

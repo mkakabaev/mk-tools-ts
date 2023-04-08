@@ -1,11 +1,11 @@
 // ------------------------------------------------------------------------------------------------
 // Helpers
 
-function _pad2(value: any): string {
+function _pad2(value: number): string {
     return ('' + value).padStart(2, '0');
 }
 
-function _pad3(value: any): string {
+function _pad3(value: number): string {
     return ('' + value).padStart(3, '0');
 }
 
@@ -35,22 +35,22 @@ export class MKDuration {
 
         switch (format ?? 'default') {
             case 'default': {
-                const seconds: any = Math.trunc(ms / 1000) % 60;
-                const minutes: any = Math.trunc(ms / 60000) % 60;
-                const hours: any = Math.trunc(ms / 3600000);
+                const seconds = Math.trunc(ms / 1000) % 60;
+                const minutes = Math.trunc(ms / 60000) % 60;
+                const hours = Math.trunc(ms / 3600000);
                 ms = ms % 1000;
                 return prefix + hours + ':' + _pad2(minutes) + ':' + _pad2(seconds) + '.' + _pad3(ms);
             }
 
             case 'hms': {
-                const seconds: any = Math.trunc(ms / 1000) % 60;
-                const minutes: any = Math.trunc(ms / 60000) % 60;
-                const hours: any = Math.trunc(ms / 3600000);
+                const seconds = Math.trunc(ms / 1000) % 60;
+                const minutes = Math.trunc(ms / 60000) % 60;
+                const hours = Math.trunc(ms / 3600000);
                 return prefix + hours + ':' + _pad2(minutes) + ':' + _pad2(seconds);
             }
 
             case 'seconds': {
-                const seconds: any = Math.trunc(ms / 1000);
+                const seconds = Math.trunc(ms / 1000);
                 ms = ms % 1000;
                 return prefix + seconds + '.' + _pad3(ms);
             }

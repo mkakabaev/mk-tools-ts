@@ -18,5 +18,5 @@
     },
 
     "editor.formatOnSave": true,
-    "cSpell.words": ["luxon"]
+    "cSpell.words": ["luxon", "subcode", "millis"]
 }

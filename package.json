@@ -1,6 +1,6 @@
 {
     "name": "mk-tools-ts",
-    "version": "0.0.11",
+    "version": "0.0.12",
     "description": "A helper library for my own projects",
     "keywords": [],
     "author": "Murad Kakabaev",
@@ -10,6 +10,7 @@
     "exports": {
         ".": "./dist/index.js",
         "./tag": "./dist/types/tag.js",
+        "./simple_date": "./dist/types/simple_date.js",
         "./delay": "./dist/utils/delay.js",
         "./stringify": "./dist/utils/stringify.js",
         "./parser": "./dist/utils/parse_utils.js"

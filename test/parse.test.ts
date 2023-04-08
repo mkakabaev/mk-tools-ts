@@ -2,7 +2,7 @@ import { requiredFloat, requiredInt, MKError } from '../src';
 
 test('requiredInt', () => { 
 
-    const ri = requiredInt;
+    const ri = (v: any, o?: any) => requiredInt(v, o);
 
     expect(ri(0)).toBe(0);
     expect(ri(+0)).toBe(0);
@@ -34,7 +34,7 @@ test('requiredInt', () => {
 
 test('requiredFloat', () => { 
 
-    const rf = requiredFloat;
+    const rf = (v: any, o?: any) => requiredFloat(v, o);
 
     expect(rf(0)).toBe(0);
     expect(rf(+0)).toBe(0);
