@@ -1,4 +1,14 @@
-import { requiredFloat, requiredInt, MKError } from '../src';
+import { requiredFloat, requiredInt, MKError, requiredString, ParseOptions } from '../src';
+
+test('String from int or bigint', () => {
+    const ri = (v: any, o?: ParseOptions & { defaultValue?: string }) => requiredString(v, { acceptNumber: true, ...o }); 
+    expect(ri('0')).toBe('0');
+    expect(ri(0)).toBe('0');
+    expect(ri(+1)).toBe('1');
+    expect(ri(12345678901234567890n)).toBe('12345678901234567890');
+    expect(ri(-12)).toBe('-12');
+    expect(ri(1.345)).toBe('1.345');
+});
 
 test('requiredInt', () => { 
 

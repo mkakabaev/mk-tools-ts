@@ -10,14 +10,14 @@ import { stringify } from './stringify';
 // (as soon as library is used as is)
 //
 
-export type Options = {
+export type ParseOptions = {
     tag?: TagLike;
     tagNext?: TagValue;
     code?: string;
     subcode?: string;
 };
 
-export type ErrorOptions = Options;
+export type ErrorOptions = ParseOptions;
 
 export type ErrorFunction = (message: string, options?: ErrorOptions) => Error;
 
@@ -34,6 +34,11 @@ function _throwErr(message: string, options?: ErrorOptions): never {
 }
 
 // ------------------------------------------------------------------------------------------------
+
+/** Just to narrow options */
+export function makeRequired<T, O>(f: (v: T, options?: O) => T): (v: T, options?: O) => T {
+    return f;
+}
 
 export function makeOptional<T, O>(f: (v: T, options?: O) => T): (v: T | undefined, options?: O) => T | undefined {
     return (v: T | undefined, options?: O) => {
@@ -114,17 +119,17 @@ export function makeOptionalNullableLiteral<T, O>(
  *   const MyLiterals = [ 'value1', 'value2', 100 ] as const;
  *   type MyType = typeof MyLiterals[number]; // MyType = 'value1' | 'value2' | 100;
  *
- *   const typedVar: MyType = requiredLiteralType(someValue, MyLiterals)
+ *   const typedVar: MyType = requiredLiteral(someValue, MyLiterals)
  *
  *   // works also but breaks further `switch-exhaustiveness-check` eslint checking
- *   const typedVar = requiredLiteralType(someValue, MyLiterals)
+ *   const typedVar = requiredLiteral(someValue, MyLiterals)
  * ```
  *
  * inplace declaration is also possible
  * ```
  *   const someValue = "aaa"
- *   var typedVar  = requiredLiteralType(someValue, [ 'value1', 'value2', 100 ] as const)
- *   var typedVar2 = requiredLiteralType(someValue, [ 'value1', 'value2', 100 ])
+ *   var typedVar  = requiredLiteral(someValue, [ 'value1', 'value2', 100 ] as const)
+ *   var typedVar2 = requiredLiteral(someValue, [ 'value1', 'value2', 100 ])
  *
  *   typedVar = "value1" // ok
  *   typedVar = "string" // compiler error
@@ -135,10 +140,25 @@ export function makeOptionalNullableLiteral<T, O>(
  *   typedVar2 = 300      // ok
  * ```
  */
-export function requiredLiteral<T>(v: T, literals: readonly T[], options?: Options): T {
-    const v1 = literals.find((l) => l === v);
+export function requiredLiteral<T extends string | number>(
+    v: T,
+    literals: readonly T[],
+    options?: ParseOptions & { detailedError?: boolean },
+): T {
+    const v1 = v == undefined ? undefined : literals.find((l) => l === v);
+
     if (v1 == undefined) {
-        _throwErr(`${stringify(v)} must be one of the [${literals.map((l) => `'${l}'`)}]`, options);
+        if (options?.detailedError) {
+            _throwErr(
+                `${v == undefined ? 'Missed' : 'Wrong '} value (one of the [${literals.map(
+                    (l) => `'${l}'`,
+                )}] is expected)`,
+                options,
+            );
+            _throwErr(`${stringify(v)} must be one of the [${literals.map((l) => `'${l}'`)}]`, options);
+        } else {
+            _throwErr(`${v == undefined ? 'Missed' : 'Wrong '} value`, options);
+        }
     }
     return v1;
 }
@@ -149,7 +169,7 @@ export const optionalNullableLiteral = makeOptionalNullableLiteral(requiredLiter
 
 // ------------------------------------------------------------------------------------------------
 
-export function definedObject<T = Record<string, any>>(v: any, options?: { path?: string[] } & Options): T {
+export function definedObject<T = Record<string, any>>(v: any, options?: { path?: string[] } & ParseOptions): T {
     let result = v;
 
     if (result === undefined) {
@@ -175,9 +195,40 @@ export function definedObject<T = Record<string, any>>(v: any, options?: { path?
 
 // ------------------------------------------------------------------------------------------------
 
+/*
+mk: does not work properly with nullable, optional, optionalNullable
+
+export function f1<T extends string>(v: T | number, options: { defaultValue?: T; acceptNumber: true } & Options): T;
+export function f1<T extends string>(v: T, options: { defaultValue?: T; acceptNumber: false } & Options): T;
+export function f1<T extends string>(v: T, options?: { defaultValue?: T } & Options): T;
+export function f1<T extends string>(v: T, options?: { defaultValue?: T } & Options): T {
+    console.log(options);
+    return v;
+}
+
+const ff11 = f1('a', { acceptNumber: true });
+const ff12 = f1(122, { acceptNumber: true });
+const ff13 = nullableF1(null, { acceptNumber: true });
+const ff13 = optionalF1(undefined, { acceptNumber: true });
+
+const ff21 = f1('a', { acceptNumber: false });
+const ff22 = f1(123, { acceptNumber: false });
+const ff23 = nullableF1(null, { acceptNumber: false });
+const ff2 = optionalF1(undefined, { acceptNumber: false });
+
+const ff31 = f1('a', {} as Options);
+const ff32 = f1(123, {  acceptNumber: true});
+const ff34 = nullableF1(null, {  });
+const ff35 = optionalF1(undefined, {  });
+
+const ff41 = f1('a');
+const ff52 = f1(123);
+
+*/
+
 export function requiredString<T extends string>(
-    v: T,
-    options?: { defaultValue?: T; acceptNumber?: boolean } & Options,
+    v: T | number | bigint,
+    options?: { defaultValue?: T; acceptNumber?: boolean } & ParseOptions,
 ): T {
     if (v == null) {
         const defaultValue = options?.defaultValue;
@@ -191,15 +242,22 @@ export function requiredString<T extends string>(
     }
 
     if (options?.acceptNumber ?? false) {
-        if (typeof v === 'number') {
-            return ('' + v) as T;
+        if (typeof v === 'number' || typeof v === 'bigint') {
+            return String(v) as T;
         }
+    }
+
+    if (v == null) {
+        _throwErr(`Missed value (a string is expected)`, options);
     }
 
     _throwErr(`${stringify(v)} is not a string`, options);
 }
 
-export function nonEmptyString<T extends string>(v: T, options?: { acceptNumber?: boolean } & Options): T {
+export function nonEmptyString<T extends string>(
+    v: T | number | bigint,
+    options?: { acceptNumber?: boolean } & ParseOptions,
+): T {
     const r = requiredString(v, options);
     if (r.length) {
         return r;
@@ -215,7 +273,7 @@ export const optionalNullableString = makeOptionalNullable(requiredString);
 
 export function requiredArray<T>(
     v: T[],
-    options?: { minLength?: number; maxLength?: number; defaultValue?: T[] } & Options,
+    options?: { minLength?: number; maxLength?: number; defaultValue?: T[] } & ParseOptions,
 ): T[] {
     if (v == null) {
         const defaultValue = options?.defaultValue;
@@ -255,9 +313,30 @@ export const optionalNullableArray = makeOptionalNullable(requiredArray);
 
 // ------------------------------------------------------------------------------------------------
 
-export function requiredBool<T extends boolean>(v: T, options?: Options): T {
+const boolMap: Record<string, boolean> = {
+    true: true,
+    false: false,
+
+    False: false,
+    F: false,
+    FALSE: false,
+    TRUE: true,
+    True: true,
+    T: true,
+};
+
+export function requiredBool<T extends boolean>(v: T, options?: ParseOptions): T {
     if (typeof v === 'boolean') {
         return v as T;
+    }
+    if (typeof v === 'string') {
+        const v1 = boolMap[v];
+        if (v1 != null) {
+            return v1 as T;
+        }
+    }
+    if (v == null) {
+        _throwErr(`Missed value (a boolean is expected)`, options);
     }
     _throwErr(`${stringify(v)} is not a boolean`, options);
 }
@@ -278,7 +357,7 @@ export function requiredInt<T extends number>(
         minValue?: T;
         maxValue?: T;
         defaultValue?: T;
-    } & Options,
+    } & ParseOptions,
 ): T {
     if (v == null) {
         if (options?.defaultValue != null) {
@@ -303,6 +382,8 @@ export function requiredInt<T extends number>(
         } else {
             _throwErr(`${stringify(v)} does not look like a valid integer string`, options);
         }
+    } else if (v == null) {
+        _throwErr(`Missed value (an integer is expected)`, options);
     } else {
         _throwErr(`${stringify(v)} does not look like a valid integer`, options);
     }
@@ -335,7 +416,7 @@ export function requiredFloat<T extends number>(
         minValue?: T;
         maxValue?: T;
         defaultValue?: T;
-    } & Options,
+    } & ParseOptions,
 ): T {
     const { defaultValue, minValue, maxValue } = options ?? {};
 
@@ -358,6 +439,8 @@ export function requiredFloat<T extends number>(
         } else {
             _throwErr(`${stringify(v)} does not look like a valid float string`, options);
         }
+    } else if (v == null) {
+        _throwErr(`Missed value (a float number is expected)`, options);
     } else {
         _throwErr(`${stringify(v)} does not look like a valid float value`, options);
     }
@@ -382,7 +465,10 @@ export const optionalNullableFloat = makeOptionalNullable(requiredFloat);
 
 // ------------------------------------------------------------------------------------------------
 
-export function requiredSimpleDate<T extends MKSimpleDate>(v: T, options?: Options): T {
+export function requiredSimpleDate<T extends MKSimpleDate>(v: T, options?: ParseOptions): T {
+    if (v == null) {
+        _throwErr(`Missed value (a timestamp is expected)`, options);
+    }
     try {
         let d = NaN;
         if ('number' == typeof v) {

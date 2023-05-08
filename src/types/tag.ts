@@ -32,18 +32,17 @@ export class Tag {
     }
 
     toString(): string {
-        let result = '';
+        const result: string[] = [];
         let s: Tag = this; // eslint-disable-line  @typescript-eslint/no-this-alias
-        while (s._parent != null) {
+        while (s._parent) {
             if (typeof s.value === 'number') {
-                // mimic array indices
-                result = `[${s.value}]` + result;
+                result.unshift(`[${s.value}]`); // mimic array indices
             } else {
-                result = `/${s.value}` + result;
+                result.unshift(`/${s.value}`);
             }
             s = s._parent;
         }
-        result = `${s.value}` + result;
-        return result;
+        result.unshift(`${s.value}`);
+        return result.join('');
     }
 }

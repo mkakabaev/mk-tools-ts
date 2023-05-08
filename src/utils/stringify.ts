@@ -1,21 +1,24 @@
-export function stringify(v: any): string {
-    if (v === undefined) {
+export function stringify(v: unknown): string {
+    switch (typeof v) {
+      case 'undefined':
         return '<undefined>';
-    }
-    if (v === null) {
-        return '<null>';
-    }
-    if (typeof v === 'string') {
-        return `'${v}'`;
-    }
-    if (typeof v === 'boolean') {
-        return `<${v}>`;
-    }
-    let result = `${v}`;
-    if (result === '[object Object]') {
-        if (v instanceof Object) {
-            result = JSON.stringify(v);
+      case 'object':
+        if (v === null) {
+          return '<null>';
         }
+        if (v instanceof Date) {
+          return v.toISOString();
+        }
+        if (Array.isArray(v)) {
+          return `[${v.map((item) => stringify(item)).join(', ')}]`;
+        }
+        return JSON.stringify(v);
+      case 'string':
+        return `'${v}'`;
+      case 'boolean':
+        return `<${v}>`;
+      default:
+        return String(v);
     }
-    return result;
-}
+  }
+  
