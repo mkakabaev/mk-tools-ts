@@ -1,32 +1,32 @@
 import { MKDate } from '../src';
 
 test('Base', () => {
-    const date1 = MKDate.utc(2021, 3, 1);
+    const date1 = MKDate.ymd(2021, 3, 1);
     const date2 = date1.addedMonths(1);
     // const date3 = MKDate.local(2021, 3, 1, 23, 11, 59);
-    expect(date1.toUtcISODateString()).toBe('2021-03-01');
-    expect(date2.toUtcISODateString()).toBe('2021-04-01');
-    expect(() => MKDate.utc(2021, 3, 0)).toThrow();
+    expect(date1.toISODateString()).toBe('2021-03-01');
+    expect(date2.toISODateString()).toBe('2021-04-01');
+    expect(() => MKDate.ymd(2021, 3, 0)).toThrow();
     expect(date1.toISOString()).toBe('2021-03-01T00:00:00.000Z');
 });
 
 test('Serialization', () => {
-    const date1 = MKDate.utc(2021, 3, 1, 23, 10, 4, 123);
+    const date1 = MKDate.fromComponents(2021, 3, 1, 23, 10, 4, 123);
     const date2 = MKDate.fromSimple(date1.toJSON());
     expect(date1.isEqual(date2)).toBe(true);
 });
 
 
 test('Incrementing', () => {
-    expect(MKDate.utc(2021, 3, 1).addedMonths(1)).toEqual(MKDate.utc(2021, 4, 1));
+    expect(MKDate.ymd(2021, 3, 1).addedMonths(1)).toEqual(MKDate.ymd(2021, 4, 1));
     // expect(MKDate.utc(2021, 12, 31).addedMonths(1)).toEqual(MKDate.utc(2022, 1, 31));
     // expect(MKDate.utc(2021, 12, 31).addedMonths(12)).toEqual(MKDate.utc(2022, 12, 31));
-    expect(MKDate.utc(2021, 12, 28).addedMonths(2)).toEqual(MKDate.utc(2022, 2, 28));
-    expect(MKDate.utc(2020, 1, 28).addedMonths(2)).toEqual(MKDate.utc(2020, 3, 28));
+    expect(MKDate.ymd(2021, 12, 28).addedMonths(2)).toEqual(MKDate.ymd(2022, 2, 28));
+    expect(MKDate.ymd(2020, 1, 28).addedMonths(2)).toEqual(MKDate.ymd(2020, 3, 28));
 });
 
 test('Comparisons', () => {
-    const d1 = MKDate.utc(2021, 3, 1);
+    const d1 = MKDate.ymd(2021, 3, 1);
 
     expect(MKDate.compare(d1, d1)).toBe(0);
     expect(MKDate.compare(d1, null)).toBe(-1);
@@ -38,7 +38,7 @@ test('Comparisons', () => {
     expect(MKDate.compare(undefined, null)).toBe(0);
     expect(MKDate.compare(undefined, undefined)).toBe(0);
 
-    const d2 = MKDate.utc(2021, 3, 1, 0, 0, 1);
+    const d2 = MKDate.fromComponents(2021, 3, 1, 0, 0, 1, 0);
 
     expect(MKDate.compare(d1, d2)).toBe(-1);
     expect(MKDate.compare(d2, d1)).toBe(1);

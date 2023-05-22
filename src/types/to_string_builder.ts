@@ -1,4 +1,5 @@
 import { MKDate } from './date';
+import { MKSimpleDate } from './simple_date';
 
 // ------------------------------------------------------------------------------------------------
 
@@ -79,7 +80,7 @@ export class ToStringBuilder {
             case ToStringBuilderValueFormat.timestamp:
                 // trying to interpret number as a Unix milliseconds time
                 if ('number' == typeof value) {
-                    value = MKDate.fromLocalJSDate(new Date(value));
+                    value = MKDate.fromSimple(value as MKSimpleDate);
                 }
 
                 // regular date
